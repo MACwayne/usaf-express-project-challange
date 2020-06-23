@@ -1,20 +1,53 @@
 const express = require('express')
 const app = express()
-const users = require('./users.json')
 const bodyParser = require('body-parser')
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
-app.get('/:id', (req, res) => {
+const students = [{"id": 1, "name": ["mac", "kane"], "grades": [{"cs4033": "A+"}]}]
+
+// // GET /students - returns a list of all students
+// // this endpoint, optionally, accepts query parameters
+// app.get('/students', (req, res) => res.send(students))
+
+// GET /students?search=<query> - returns a list of students filtered on name matching the given query
+app.get('/students', (req, res) => {
+    /* GET a user by their name */
+    let name = req.query.search
+    foundStudent = null
+
+    for (var student of students) {
+        for (var studentName of student.name) {
+            if (studentName === name) {
+                foundStudent = student
+                break
+            }
+        }
+    }
+    console.log(req.query)
+
+    if (Object.keys(req.query).length !== 0) {
+        if (foundStudent !== null) {
+            res.send(foundStudent)
+        } else {
+            res.send("No students exist witht the name '" + name + "'")
+        }
+    } else {
+        res.send(students)
+    }
+})
+
+// GET /students/:studentId - returns details of a specific student by student id
+app.get('/students/:studentId', (req, res) => {
     /* GET a user by their id */
-    let id = req.params.id
+    let id = req.params.studentId
     id = parseInt(id)
     foundUser = null
 
-    for (var user of users) {
-        if (user.id === id) {
-            foundUser = user
+    for (var student of students) {
+        if (student.id === id) {
+            foundUser = student
             break
         }
     }
@@ -22,58 +55,88 @@ app.get('/:id', (req, res) => {
     if (foundUser !== null) {
         res.send(foundUser)
     } else {
-        res.send("cannot find user")
+        res.send("cannot find StudentId '" + id + "'")
     }
 })
 
-app.post('/', (req, res) => {
-    /* POST user data using the request body */
-    // let id = req.body.userid
-
-    // create new ID based off highest ID found + 1
-    var maxID = 0
-    for (var user of users) {
-        
-        if (user.id > maxID) {
-            maxID = user.id
-        }
-    }
-    var id = maxID + 1
-
-    var newPerson = req.body
-    newPerson['id'] = id
-
-    console.log(newPerson)
-
-    if (newPerson !== null) {
-        res.send(newPerson)
-    } else {
-        res.send("cannot post new user data")
-    }
-})
-
-app.get('/?', (req, res) => {
-    /* GET a user by their name */
-    let name = req.query.name
+// GET /grades/:studentId - returns all grades for a given student by student id
+app.get('/grades/:studentId', (req, res) => {
+    /* GET a user by their id */
+    let id = req.params.studentId
+    id = parseInt(id)
     foundUser = null
 
-    for (var user of users) {
-        for (var userName of user.name) {
-            if (userName === name) {
-                foundUser = user
-                break
-            }
+    for (var student of students) {
+        if (student.id === id) {
+            foundUser = student
+            break
         }
     }
 
     if (foundUser !== null) {
-        res.send(foundUser)
+        if (foundUser.grades !== []) {
+            res.send(foundUser.grades)
+        } else {
+            res.send("No grades associated with studentId '" + studentId + "'")
+        }
     } else {
-        res.send("cannot find user")
+        res.send("cannot find StudentID '" + id + "'")
     }
 })
 
-// app.get('/', (req, res) => res.send(users))
+// POST /grades - records a new grade, returns success status in JSON response (meaning you do not need to actually store the grade in a database. 
+// You do need to validate that the user supplied at least a grade, and a studentId)
+app.post('/grades', (req, res) => {
+    /* POST user data using the request body */
+     let grade = req.body.grade
+     let studentId = req.body.studentId
 
-const port = 3002
+     // Validate supplied body
+     var valid = true
+
+     if (studentId === undefined) {
+         valid = false
+     }
+
+     if (grade === undefined) {
+        valid = false
+    }
+
+    if (valid) {
+        res.send("valid grade input")
+    } else {
+        res.status(400).send("invalid input")
+    }
+
+})
+
+// POST /register - creates a new user, returns success status in JSON response (meaning you do not need to actually store the user info in a database. 
+// You do need to validate that the user supplied username and email)
+
+app.post('/register', (req, res) => {
+    /* POST user data using the request body */
+    let username = req.body.username
+    let email = req.body.email
+
+     // Validate supplied body
+     var valid = true
+
+     if (username === undefined) {
+         valid = false
+     }
+
+     if (email === undefined) {
+        valid = false
+    }
+
+    if (valid) {
+        res.send("valid register input")
+    } else {
+        res.status(400).send("invalid register input")
+    }
+
+})
+
+
+const port = 3003
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
